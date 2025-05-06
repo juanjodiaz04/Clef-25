@@ -1,7 +1,6 @@
 # Virtual Environment
-R1.5.1/
-Class-env/
-Emb-env/
+env-emb/
+env-class/
 .env/
 *.pyc
 __pycache__/
@@ -9,14 +8,15 @@ __pycache__/
 # train
 audios/
 embeddings/
+raw_audios/
 
 # Inputs Kaggle
 Inputs/
 
 # csv _embeddings
 embeddings_csv/
+*.log
 *.csv
 
 # Outpus
 outputs/
-custom_model/
