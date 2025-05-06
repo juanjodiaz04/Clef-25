@@ -64,7 +64,7 @@ deactivate
 
 ---
 
-## 4. Instalar requerimientos de BirdNET (~/Workspace)
+## 4. Instalar requerimientos de BirdNET y el Clasificador(~/Workspace)
 
 ```bash
 
@@ -81,15 +81,29 @@ deactivate
 
 ---
 
-## 5. Obtener los Embeddings (~/BirdNET-Analyzer-1.5.1)
+## 5. Segmentar audios (~/Local_Training)
 
 ```bash
 
 # Escoger el entorno de embeddings desde (~/Workspace)
 source env-emb/bin/activate
 
+# Moverse a la carpeta de Local_Training
+cd Local_Training
+
+# Ejecutar Segmentación de Audios a 5s
+python Segment_Audio/segment.py --input raw_audios/ --output audios/ --duration 5 --threads 4 --log Segment_Audio/segmentador.log
+
+```
+
+---
+
+## 6. Obtener los Embeddings (~/BirdNET-Analyzer-1.5.1)
+
+```bash
+
 # Moverse a la carpeta de BirdNET-Analyzer
-cd Local_Training/BirdNET-Analyzer-1.5.1
+cd BirdNET-Analyzer-1.5.1
 
 # Ejecutar generación de embeddings
 python -m birdnet_analyzer.embeddings --i ../audios/ --o ../embeddings/ --threads 4
