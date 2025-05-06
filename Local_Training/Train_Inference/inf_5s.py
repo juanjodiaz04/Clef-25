@@ -35,7 +35,9 @@ def main():
                                   activation_fn=nn.ReLU)
     else:
         model = my_models.get_model(num_classes=num_classes,
-                                    model_name=args.model_type)
+                                    model_name=args.model_type, 
+                                    pretrained=False) # pretrained=False para usar pesos de entrenamiento 
+                                                      #y  evitar errores de internet
 
     model.load_state_dict(torch.load(args.modelo, map_location="cpu"))
     model.eval()

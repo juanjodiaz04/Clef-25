@@ -113,4 +113,4 @@ if __name__ == "__main__":
     )
 
 # ======================= EJEMPLO DE EJECUCIÓN ========================
-#python embed2csv/embed_MT_P_OV.py --input embeddings --output embeddings_csv/embeddings_MT_noverlap.csv --chunks 3 --threads 12 --agg mean
+#python embed2csv/embed_MT_P_OV.py --input embeddings --output embeddings_csv/embeddings_MT_overlap.csv --chunks 3 --threads 12 --agg mean

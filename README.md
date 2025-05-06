@@ -1,6 +1,6 @@
 # 🐦 BirdCLEF Pipeline - Workstation Setup
 
-Este documento describe paso a paso cómo configurar y ejecutar todo el pipeline de entrenamiento e inferencia en tu estación de trabajo para la competencia BirdCLEF.
+Este documento describe paso a paso cómo configurar y ejecutar todo el pipeline de entrenamiento e inferencia en la Workstation.
 
 ---
 
@@ -44,7 +44,7 @@ mkdir outputs
 # Verificar versión de Python
 python --version
 
-cd ~ Workspace
+cd ~/Workspace
 
 # Crear entorno virtual
 py -3.10 -m venv env-class
@@ -59,11 +59,11 @@ source env-class/Scripts/activate
 
 ---
 
-## 📦 4. Instalar requerimientos de BirdNET
+## 4. Instalar requerimientos de BirdNET
 
 ```bash
 
-cd ~ Workspace
+cd ~/Workspace
 
 (Embedder)
 pip install -r Local_Training/BirdNET-Analyzer-1.5.1/requirements.txt
@@ -74,7 +74,7 @@ pip install -r Req_classifier.txt
 
 ---
 
-## 🎼 5. Obtener los Embeddings
+## 5. Obtener los Embeddings
 
 ```bash
 cd BirdNET-Analyzer-1.5.1
@@ -85,26 +85,31 @@ python -m birdnet_analyzer.embeddings --i ../audios/ --o ../embeddings/ --thread
 
 ---
 
-## 🧮 7. Convertir embeddings a CSV
+## 6. Convertir embeddings a CSV
 
 ```bash
-cd ../Workspace
+cd ~/Local_Training
 
-# Versión sin solapamiento (chunks independientes de 3s)
-python embed2csv/embed_MT_P_NOV.py --input embeddings --output embeddings_csv/sin_overlap.csv
+# Versión sin solapamiento (chunks independientes de 5s)
+python embed2csv/embed_MT_P_NOV.py --input embeddings --output embeddings_csv/embeddings_MT_noverlap.csv --chunks 3 --threads 4 --agg mean
 
 # Versión con solapamiento (overlapping chunks)
-python embed2csv/embed_MT_P_OV.py --input embeddings --output embeddings_csv/overlap.csv
+python embed2csv/embed_MT_P_OV.py --input embeddings --output embeddings_csv/embeddings_MT_overlap.csv --chunks 3 --threads 4 --agg mean
 ```
 
 ---
 
-## 🧠 8. Entrenar un modelo personalizado (opcional)
+## 7. Entrenar un modelo
 
 ```bash
-cd BirdNET-Analyzer-1.5.1
-mkdir ../custom_model
+cd ~/Local_Training
+python train.py --csv embeddings_csv/embeddings_MT_overlap.csv --output outputs --epochs 20 --model_type efficientnet_b7
 
-# Ejecutar entrenamiento
-python -m birdnet_analyzer.train --i ../audios/ --o ../custom_model/ --threads 4
 ```
+
+## 8. Inferencia Local
+
+```bash
+cd ~/Local_Training
+
+python Train_Inference/inf_5s.py     --csv embeddings_csv/embeddings_MT_overlap.csv     --modelo outputs/run_06_0028/modelo_efficientnet_b7.pt     --labels outputs/run_06_0028/label_encoder.pkl      --sample-sub CSV/sample_submission.csv     --output outputs/run_06_0028/submission.csv --model_type efficientnet_b7
