@@ -17,17 +17,19 @@ sudo apt install ffmpeg
 
 ---
 
-## 📁 2. Crear el espacio de trabajo
+## 2. Crear el espacio de trabajo
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/juanjodiaz04/BN_R1.5.1.git Workspace
+git clone https://github.com/juanjodiaz04/Clef-25.git Workspace
 cd Workspace
 
 # Eliminar origen para evitar futuros pushes accidentales
 git remote remove origin
 
+cd Local_Training
 # Crear carpetas necesarias
+mkdir raw_audios
 mkdir audios
 mkdir embeddings
 mkdir embeddings_csv
@@ -36,54 +38,49 @@ mkdir outputs
 
 ---
 
-## 📦 3. Mover o descomprimir archivos de audio
-
-```bash
-# Mover archivos si es necesario
-mv origen/archivo.txt folder/destino
-
-# Descomprimir archivos ZIP
-unzip archivo.zip -d audios/
-
-# Descomprimir archivos TAR
-tar -xvzf archivo.tar.gz -C carpeta_destino/
-```
-
----
-
-## 🐍 4. Configurar entorno virtual (Python 3.11 recomendado)
+## 3. Configurar entornos virtuales (Python 3.10 recomendado)
 
 ```bash
 # Verificar versión de Python
 python --version
 
+cd ~ Workspace
+
 # Crear entorno virtual
-py -3.11 -m venv Emb-env
+py -3.10 -m venv env-class
+py -3.10 -m venv env-emb
 
 # Activar entorno virtual (Linux/Mac)
-source Emb-env/bin/activate
+source env-class/bin/activate
 
 # Activar entorno virtual (Windows)
-source Emb-env/Scripts/activate
+source env-class/Scripts/activate
 ```
 
 ---
 
-## 📦 5. Instalar requerimientos de BirdNET
+## 📦 4. Instalar requerimientos de BirdNET
 
 ```bash
-pip install -r BirdNET-Analyzer-1.5.1/requirements.txt
+
+cd ~ Workspace
+
+(Embedder)
+pip install -r Local_Training/BirdNET-Analyzer-1.5.1/requirements.txt
+
+(Classifier)
+pip install -r Req_classifier.txt
 ```
 
 ---
 
-## 🎼 6. Obtener los Embeddings
+## 🎼 5. Obtener los Embeddings
 
 ```bash
 cd BirdNET-Analyzer-1.5.1
 
 # Ejecutar generación de embeddings
-python3 -m birdnet_analyzer.embeddings --i ../audios/ --o ../embeddings/ --t
+python -m birdnet_analyzer.embeddings --i ../audios/ --o ../embeddings/ --threads 4
 ```
 
 ---
