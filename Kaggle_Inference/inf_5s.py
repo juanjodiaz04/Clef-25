@@ -44,7 +44,7 @@ def main():
     print("Cargando embeddings...")
     df = pd.read_csv(args.csv)
     #Borrar------
-    df = df.sample(frac=0.1, random_state=42) # borrar esta línea para usar todo el dataset
+    #df = df.sample(frac=0.1, random_state=42) # borrar esta línea para usar todo el dataset
     #-----------
     embedding_cols = [col for col in df.columns if col.startswith("emb_")]
     if not embedding_cols:
