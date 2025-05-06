@@ -139,7 +139,7 @@ python embed2csv/embed_MT_P_OV.py --input embeddings --output embeddings_csv/emb
 
 ```bash
 
-python train.py --csv embeddings_csv/embeddings_MT_overlap.csv --output outputs --epochs 20 --model_type efficientnet_b7
+python Train_Inference/train.py --csv embeddings_csv/embeddings_MT_overlap.csv --output outputs --epochs 20 --model_type efficientnet_b7
 
 ```
 

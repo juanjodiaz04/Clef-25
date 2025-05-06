@@ -1,6 +1,7 @@
 import os
 import argparse
 import datetime
+import time
 import platform
 import torch
 import torch.nn as nn
@@ -123,7 +124,9 @@ if __name__ == "__main__":
     model.to(device)
 
     log(f"Modelo cargado y movido a {device}")
+    start_time = time.time()
     entrenar_modelo(model, train_dl, device, log, epochs=args.epochs)
+    elapsed_time = time.time() - start_time
     evaluar_modelo(model, val_dl, le, device, run_output_dir, log, timestamp, title=args.model_type)
 
     model_path = os.path.join(run_output_dir, f"modelo_{args.model_type}.pt")
@@ -131,6 +134,7 @@ if __name__ == "__main__":
     torch.save(model.state_dict(), model_path)
     joblib.dump(le, encoder_path)
     log(f"\nModelo guardado en '{model_path}'")
-    log(f"Label encoder guardado en '{encoder_path}'")
+    log(f"\nLabel encoder guardado en '{encoder_path}'")
+    log(f"Tiempo total de entrenamiento: {elapsed_time:.2f} segundos")
 
 

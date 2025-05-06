@@ -8,3 +8,4 @@ numpy==1.23.5
 matplotlib
 scikit-learn
 tqdm
+soundfile
