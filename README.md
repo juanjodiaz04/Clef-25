@@ -103,6 +103,9 @@ deactivate
 
 ```bash
 
+# Moverse al Workspace
+cd ../.. 
+
 # Cambiar al entorno de clasificación desde (~/Workspace)
 source env-class/bin/activate
 
