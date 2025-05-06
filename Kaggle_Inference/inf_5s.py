@@ -1,11 +1,12 @@
 import os
 import argparse
 import torch
+from torch import nn
 import pandas as pd
 import numpy as np
 import joblib
 from tqdm import tqdm
-from model import CNNClassifier
+import my_models
 
 def main():
     parser = argparse.ArgumentParser(description="Inferencia para BirdCLEF")
@@ -14,6 +15,7 @@ def main():
     parser.add_argument("--labels", type=str, required=True, help="Archivo .pkl con el LabelEncoder")
     parser.add_argument("--sample-sub", type=str, required=True, help="Archivo sample_submission.csv con columnas esperadas")
     parser.add_argument("--output", type=str, default="submission.csv", help="Archivo CSV de salida")
+    parser.add_argument("--model_type", type=str, default="resnet18", help="Tipo de modelo a usar: 'resnet18' o 'mlp'")
     args = parser.parse_args()
 
     print("Cargando sample_submission...")
@@ -24,12 +26,25 @@ def main():
     print("Cargando modelo y LabelEncoder...")
     le = joblib.load(args.labels)
     num_classes = len(le.classes_)
-    model = CNNClassifier(num_classes)
+
+    if args.model_type == "mlp":
+        input_size = 32 * 96  # Aplanar las dimensiones de entrada (1x32x96)
+        model = my_models.get_MLP(num_classes=num_classes, 
+                                  input_size=input_size, 
+                                  hidden_sizes=[256, 128, 64], 
+                                  activation_fn=nn.ReLU)
+    else:
+        model = my_models.get_model(num_classes=num_classes,
+                                    model_name=args.model_type)
+
     model.load_state_dict(torch.load(args.modelo, map_location="cpu"))
     model.eval()
 
     print("Cargando embeddings...")
     df = pd.read_csv(args.csv)
+    #Borrar------
+    df = df.sample(frac=0.1, random_state=42) # borrar esta línea para usar todo el dataset
+    #-----------
     embedding_cols = [col for col in df.columns if col.startswith("emb_")]
     if not embedding_cols:
         raise ValueError("No se encontraron columnas que empiecen por 'emb_'.")
@@ -61,8 +76,10 @@ def main():
     # Asegurar que todas las columnas esperadas estén presentes
     missing_cols = [col for col in expected_labels if col not in pred_df.columns]
     if missing_cols:
-        for col in missing_cols:
-            pred_df[col] = 0.0
+        # Crear un DataFrame con las columnas faltantes, todas con 0.0
+        missing_df = pd.DataFrame(0.0, index=pred_df.index, columns=missing_cols)
+        # Concatenar horizontalmente
+        pred_df = pd.concat([pred_df, missing_df], axis=1)
 
     # Asegurar el orden correcto de columnas
     pred_df = pred_df[["row_id"] + expected_labels]
@@ -77,5 +94,5 @@ if __name__ == "__main__":
     main()
 
 # ======================= EJECUCIÓN ========================
-# python classifiers/inf_5s.py     --csv embeddings_csv/embeddings_MT_overlap.csv     --modelo outputs/run_23_1113/modelo.pt     --labels outputs/run_23_1113/label_encoder.pkl     --sample-sub CSV/sample_submission.csv     --output outputs/run_23_1113/submission.csv
+# python Inference/inf_5s.py     --csv Inference/embeddings_inference.csv     --modelo Train/outputs/modelo_05_1925.pt     --labels Train/outputs/label_encoder_05_1925.pkl      --sample-sub Inference/sample_submission.csv     --output Inference/submission.csv --model_type mlp
 

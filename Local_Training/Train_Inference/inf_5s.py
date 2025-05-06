@@ -76,8 +76,10 @@ def main():
     # Asegurar que todas las columnas esperadas estén presentes
     missing_cols = [col for col in expected_labels if col not in pred_df.columns]
     if missing_cols:
-        for col in missing_cols:
-            pred_df[col] = 0.0
+        # Crear un DataFrame con las columnas faltantes, todas con 0.0
+        missing_df = pd.DataFrame(0.0, index=pred_df.index, columns=missing_cols)
+        # Concatenar horizontalmente
+        pred_df = pd.concat([pred_df, missing_df], axis=1)
 
     # Asegurar el orden correcto de columnas
     pred_df = pred_df[["row_id"] + expected_labels]
