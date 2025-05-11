@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, TensorDataset
 import joblib
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
 
 import my_models
@@ -52,6 +52,47 @@ def cargar_datos(path_csv):
     val_ds = TensorDataset(torch.tensor(X_val), torch.tensor(y_val))
     return train_ds, val_ds, le, num_classes
 
+def cargar_datos_separados(train_csv, val_csv, test_csv, BASE_DIR):
+    
+    # Dirs
+    train_csv = os.path.join(BASE_DIR, train_csv)
+    val_csv = os.path.join(BASE_DIR, val_csv)
+    test_csv = os.path.join(BASE_DIR, test_csv)
+
+    # Load train data
+    train_df = pd.read_csv(train_csv, dtype={"label": str})
+    X_train = train_df[[f'emb_{i}' for i in range(3072)]].values.astype(np.float32)
+    y_train = train_df["label"].values
+
+    # Load validation data
+    val_df = pd.read_csv(val_csv, dtype={"label": str})
+    X_val = val_df[[f'emb_{i}' for i in range(3072)]].values.astype(np.float32)
+    y_val = val_df["label"].values
+
+    # Load test data
+    test_df = pd.read_csv(test_csv, dtype={"label": str})
+    X_test = test_df[[f'emb_{i}' for i in range(3072)]].values.astype(np.float32)
+    y_test = test_df["label"].values
+
+    # Encode labels
+    le = LabelEncoder()
+    y_train_encoded = le.fit_transform(y_train)
+    y_val_encoded = le.transform(y_val)
+    y_test_encoded = le.transform(y_test)
+    num_classes = len(le.classes_)
+
+    # Reshape data
+    X_train = X_train.reshape(-1, 1, 32, 96)
+    X_val = X_val.reshape(-1, 1, 32, 96)
+    X_test = X_test.reshape(-1, 1, 32, 96)
+
+    # Create TensorDatasets
+    train_ds = TensorDataset(torch.tensor(X_train), torch.tensor(y_train_encoded))
+    val_ds = TensorDataset(torch.tensor(X_val), torch.tensor(y_val_encoded))
+    test_ds = TensorDataset(torch.tensor(X_test), torch.tensor(y_test_encoded))
+
+    return train_ds, val_ds, test_ds, le, num_classes
+
 def entrenar_modelo(model, train_dl, device, log, epochs=20):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.CrossEntropyLoss()
@@ -68,6 +109,55 @@ def entrenar_modelo(model, train_dl, device, log, epochs=20):
             total_loss += loss.item()
         avg_loss = total_loss / len(train_dl)
         log(f"Epoca {epoch}: Loss = {avg_loss:.4f}")
+
+def entrenar_modelo_CV(model, train_dl, val_dl, device, log, epochs=20):
+    """
+    Entrena el modelo y evalúa en el conjunto de validación después de cada época.
+
+    Args:
+        model: El modelo a entrenar.
+        train_dl: DataLoader para el conjunto de entrenamiento.
+        val_dl: DataLoader para el conjunto de validación.
+        device: Dispositivo (CPU o GPU).
+        log: Función para registrar mensajes.
+        epochs: Número de épocas de entrenamiento.
+    """
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    criterion = nn.CrossEntropyLoss()
+    best_val_loss = float('inf')  # Para rastrear la mejor pérdida de validación
+
+    for epoch in range(1, epochs + 1):
+        # Entrenamiento
+        model.train()
+        total_loss = 0
+        for xb, yb in train_dl:
+            xb, yb = xb.to(device), yb.to(device).long()
+            pred = model(xb)
+            loss = criterion(pred, yb)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        avg_loss = total_loss / len(train_dl)
+        log(f"Epoca {epoch}: Train Loss = {avg_loss:.4f}")
+
+        # Validación
+        model.eval()
+        val_loss = 0
+        with torch.no_grad():
+            for xb, yb in val_dl:
+                xb, yb = xb.to(device), yb.to(device).long()
+                pred = model(xb)
+                loss = criterion(pred, yb)
+                val_loss += loss.item()
+        avg_val_loss = val_loss / len(val_dl)
+        log(f"Epoca {epoch}: Validation Loss = {avg_val_loss:.4f}")
+
+        # Guardar el mejor modelo basado en la pérdida de validación
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(model.state_dict(), "best_model.pth")
+            log("Modelo mejorado guardado.")
 
 def evaluar_modelo(model, val_dl, le, device, output_dir, log, timestamp, title=""):
     model.eval()
@@ -110,9 +200,11 @@ if __name__ == "__main__":
     log, log_file = configurar_logs(run_output_dir, timestamp)
     log_hardware(log)
 
-    train_ds, val_ds, le, num_classes = cargar_datos(args.csv)
+    #train_ds, val_ds, le, num_classes = cargar_datos(args.csv)
+    train_ds, val_ds, test_ds, le, num_classes = cargar_datos_separados(args.train_csv, args.val_csv, args.test_csv, BASE_DIR="")
     train_dl = DataLoader(train_ds, batch_size=32, shuffle=True)
     val_dl = DataLoader(val_ds, batch_size=32)
+    test_dl = DataLoader(test_ds, batch_size=32)
 
     if args.model_type == "mlp":
         input_size = 32 * 96
@@ -125,9 +217,12 @@ if __name__ == "__main__":
 
     log(f"Modelo cargado y movido a {device}")
     start_time = time.time()
-    entrenar_modelo(model, train_dl, device, log, epochs=args.epochs)
+    #entrenar_modelo(model, train_dl, device, log, epochs=args.epochs)
+    entrenar_modelo_CV(model, train_dl, val_dl, device, log, epochs=args.epochs)
     elapsed_time = time.time() - start_time
-    evaluar_modelo(model, val_dl, le, device, run_output_dir, log, timestamp, title=args.model_type)
+
+    # Evaluate on test
+    evaluar_modelo(model, test_dl, le, device, run_output_dir, log, timestamp, title="Test")
 
     model_path = os.path.join(run_output_dir, f"modelo_{args.model_type}.pt")
     encoder_path = os.path.join(run_output_dir, "label_encoder.pkl")

@@ -44,13 +44,16 @@ def generar_csv_noverlap(input_dir, output_csv, chunk_size=3, num_threads=4, agg
     max_threads = min(num_threads, os.cpu_count())
     all_txt_files = []
 
-    for label_folder in os.listdir(input_dir):
+    species_to_process = [args.species] if args.species != "all" else os.listdir(input_dir)
+
+    for label_folder in species_to_process:
         folder_path = os.path.join(input_dir, label_folder)
         if not os.path.isdir(folder_path):
             continue
         for file in os.listdir(folder_path):
             if file.endswith(".birdnet.embeddings.txt"):
                 all_txt_files.append(os.path.join(folder_path, file))
+
 
     audio_chunks = defaultdict(list)
 
@@ -63,8 +66,10 @@ def generar_csv_noverlap(input_dir, output_csv, chunk_size=3, num_threads=4, agg
         return (label, audio_id, chunk_idx, emb)
 
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
-        futures = [executor.submit(process_file, path) for path in all_txt_files]
+        futures = {executor.submit(process_file, path): path for path in all_txt_files}
         for future in as_completed(futures):
+            path = futures[future]
+            print(f"Procesando {path}")
             try:
                 label, audio_id, chunk_idx, emb = future.result()
                 audio_chunks[(label, audio_id)].append((chunk_idx, emb))
@@ -107,6 +112,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, default="embeddings_csv/embeddings_MT_noverlap.csv", help="Ruta del archivo CSV de salida")
     parser.add_argument("--chunks", type=int, default=3, help="Número de embeddings a concatenar por fila (sin solape)")
     parser.add_argument("--threads", type=int, default=4, help="Número de hilos para procesamiento paralelo")
+    parser.add_argument("--species", type=str, default="all", help="Nombre de la especie a procesar (subcarpeta). Usa 'all' para procesar todas.")
     parser.add_argument("--agg", type=str, default="mean", choices=["mean", "max"], help="Método de agregación para múltiples líneas en un archivo de embedding")
     args = parser.parse_args()
 
@@ -119,4 +125,5 @@ if __name__ == "__main__":
     )
 
 # ======================= EJEMPLO DE EJECUCIÓN ========================
-# python embed2csv/embed_MT_P_NOV.py --input Embeddings --output embeddings_csv/embeddings_MT_noverlap.csv --chunks 3 --threads 12 --agg mean
+# python embed2csv/embed_MT_P_NOV.py --input Embeddings --output embeddings_csv/embeddings_MT_noverlap_.csv --chunks 3 --threads 4 --agg mean
+# python embed2csv/embed_MT_P_NOV.py --input Embeddings --output embeddings_csv/embeddings_all.csv --chunks 1 --threads 4 --agg mean
