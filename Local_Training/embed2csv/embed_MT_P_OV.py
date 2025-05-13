@@ -36,11 +36,13 @@ def parse_filename(path):
     chunk_index = int(file.split("_")[1].split(".")[0])
     return label, audio_id, chunk_index
 
-def generar_csv_embeddings(input_dir, output_csv, chunk_size=3, num_threads=4, agg='mean'):
+def generar_csv_embeddings(input_dir, output_csv, chunk_size=3, num_threads=4, agg='mean', species="all"):
     max_threads = min(num_threads, os.cpu_count())
     all_txt_files = []
 
-    for label_folder in os.listdir(input_dir):
+    species_to_process = [species] if species != "all" else os.listdir(input_dir)
+
+    for label_folder in species_to_process:
         folder_path = os.path.join(input_dir, label_folder)
         if not os.path.isdir(folder_path):
             continue
@@ -59,13 +61,15 @@ def generar_csv_embeddings(input_dir, output_csv, chunk_size=3, num_threads=4, a
         return (label, audio_id, chunk_idx, emb)
 
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
-        futures = [executor.submit(process_file, path) for path in all_txt_files]
+        futures = {executor.submit(process_file, path): path for path in all_txt_files}
         for future in as_completed(futures):
+            path = futures[future]
+            print(f"Procesando {path}")
             try:
                 label, audio_id, chunk_idx, emb = future.result()
                 audio_chunks[(label, audio_id)].append((chunk_idx, emb))
             except Exception as e:
-                print(f"Error en procesamiento de archivo: {e}")
+                print(f"Error en {path}: {e}")
 
     print("Procesando agrupaciones...")
     rows = []
@@ -101,6 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--chunks", type=int, default=3, help="Número de embeddings a concatenar por fila")
     parser.add_argument("--threads", type=int, default=4, help="Número de hilos para procesamiento paralelo")
     parser.add_argument("--agg", type=str, default="mean", choices=["mean", "max"], help="Método de agregación para múltiples líneas en un archivo de embedding")
+    parser.add_argument("--species", type=str, default="all", help="Nombre de la especie a procesar (subcarpeta). Usa 'all' para procesar todas.")
 
     args = parser.parse_args()
 
@@ -109,8 +114,22 @@ if __name__ == "__main__":
         args.output,
         chunk_size=args.chunks,
         num_threads=args.threads,
-        agg=args.agg
+        agg=args.agg,
+        species=args.species
     )
 
-# ======================= EJEMPLO DE EJECUCIÓN ========================
-#python embed2csv/embed_MT_P_OV.py --input embeddings --output embeddings_csv/embeddings_MT_overlap.csv --chunks 3 --threads 12 --agg mean
+# ======================= EXECUTION ========================
+
+# DEFAULT EXECUTION 
+# python embed2csv/embed_MT_P_OV.py --threads 4 
+
+# CSV ESPECIES Overlap
+# python embed2csv/embed_MT_P_OV.py --output embeddings_csv/species/embeddings_OV_yeofly1.csv --chunks 3 --threads 4 --species yeofly1
+
+# default Args
+# --input embeddings 
+# --output embeddings_csv/embeddings_MT_overlap.csv 
+# --chunks 3 
+# --threads 4
+# --species all
+# --agg mean

@@ -1,7 +1,6 @@
 import torchvision.models as models
 import torch
 import torch.nn as nn
-import json
 def get_model(num_classes, model_name = 'resnet18', pretrained=True):
     """
     Crea un modelo ResNet18 modificado para aceptar 1 canal de entrada (en lugar de 3) 
@@ -119,8 +118,6 @@ def get_model(num_classes, model_name = 'resnet18', pretrained=True):
     model.fc = nn.Linear(model.fc.in_features, num_classes)
 
     return model
-
-import torch.nn as nn
 
 class MLP(nn.Module):
     def __init__(self, input_size, hidden_sizes, num_classes, activation_fn=nn.ReLU):

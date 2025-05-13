@@ -40,11 +40,11 @@ def parse_filename(path):
     chunk_index = int(file.split("_")[1].split(".")[0])
     return label, audio_id, chunk_index
 
-def generar_csv_noverlap(input_dir, output_csv, chunk_size=3, num_threads=4, agg="mean"):
+def generar_csv_noverlap(input_dir, output_csv, chunk_size=3, num_threads=4, species="all", agg="mean"):
     max_threads = min(num_threads, os.cpu_count())
     all_txt_files = []
 
-    species_to_process = [args.species] if args.species != "all" else os.listdir(input_dir)
+    species_to_process = [species] if species != "all" else os.listdir(input_dir)
 
     for label_folder in species_to_process:
         folder_path = os.path.join(input_dir, label_folder)
@@ -121,9 +121,22 @@ if __name__ == "__main__":
         args.output,
         chunk_size=args.chunks,
         num_threads=args.threads,
+        species=args.species,
         agg=args.agg
     )
 
-# ======================= EJEMPLO DE EJECUCIÓN ========================
-# python embed2csv/embed_MT_P_NOV.py --input Embeddings --output embeddings_csv/embeddings_MT_noverlap_.csv --chunks 3 --threads 4 --agg mean
-# python embed2csv/embed_MT_P_NOV.py --input Embeddings --output embeddings_csv/embeddings_all.csv --chunks 1 --threads 4 --agg mean
+# ======================= EXECUTION ========================
+
+# DEFAULT EXECUTION 
+# python embed2csv/embed_MT_P_NOV.py --threads 4 
+
+# CSV ESPECIES
+# python embed2csv/embed_MT_P_NOV.py --output embeddings_csv/species/embeddings_yeofly1.csv --chunks 1 --threads 4 --species yeofly1
+
+# default Args
+# --input embeddings 
+# --output embeddings_csv/embeddings_MT_noverlap.csv 
+# --chunks 3 
+# --threads 4
+# --species all
+# --agg mean

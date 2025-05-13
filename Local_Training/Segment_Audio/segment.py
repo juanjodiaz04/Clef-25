@@ -86,12 +86,23 @@ def segmentar_audios(input_dir, output_dir, segment_duration=5, num_threads=4):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Segmentador de audios en clips de duración fija con estructura de carpetas")
-    parser.add_argument("--input", type=str, required=True, help="Directorio raíz de entrada con archivos de audio")
-    parser.add_argument("--output", type=str, required=True, help="Directorio raíz de salida donde se guardarán los segmentos")
+    parser.add_argument("--input", type=str, default="raw_audios/", help="Directorio raíz de entrada con archivos de audio")
+    parser.add_argument("--output", type=str, default="audios/", help="Directorio raíz de salida donde se guardarán los segmentos")
     parser.add_argument("--duration", type=int, default=5, help="Duración de cada segmento en segundos (default: 5)")
     parser.add_argument("--threads", type=int, default=4, help="Número de hilos para procesamiento paralelo (default: 4)")
-    parser.add_argument("--log", type=str, default="segmentador.log", help="Ruta del archivo de log (default: segmentador.log)")
+    parser.add_argument("--log", type=str, default="Segment_Audio/segmentador.log", help="Ruta del archivo de log (default: segmentador.log)")
     args = parser.parse_args()
 
     configurar_logging(args.log)
     segmentar_audios(args.input, args.output, segment_duration=args.duration, num_threads=args.threads)
+
+# ======================= EXECUTION========================
+# DEFAULT EXECUTION 
+# python Segment_Audio/segment.py --threads 4
+
+# default Args
+# --input raw_audios/ 
+# --output audios/ 
+# --duration 5 
+# --threads 4
+# --log Segment_Audio/segmentador.log
