@@ -9,6 +9,7 @@ __pycache__/
 audios/
 embeddings/
 raw_audios/
+silence/
 
 # Inputs Kaggle
 Inputs/

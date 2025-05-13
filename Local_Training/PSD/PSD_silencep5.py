@@ -11,11 +11,9 @@ from tqdm import tqdm
 
 
 # ========= Parámetros =========
-UMBRAL_PSD_VAR = 1e-18
-UMBRAL_ENTROPIA = 1.549e-18
 SR = 32000  # Asume frecuencia de muestreo fija
 TOP_K = 20  # Cuántos espectrogramas mostrar
-FOLDER = "audios/yeofly1"  # Cambia esto a tu carpeta
+FOLDER = "audios/yelori1"  # Cambia esto a tu carpeta
 
 # ========= Métricas =========
 def calcular_psd(audio, sr):
@@ -39,36 +37,39 @@ def evaluar_segmento(path):
 
 # ========= Buscar y filtrar =========
 def filtrar_segmentos(audio_folder):
-    descartados = []
+    resultados = []
     valores_psd = []
     valores_entropia = []
 
     archivos = [f for f in os.listdir(audio_folder) if f.endswith(".ogg")]
 
+    # Paso 1: calcular todos los valores
     for fname in tqdm(archivos, desc="Procesando segmentos"):
         path = os.path.join(audio_folder, fname)
         try:
             psd_var, entropia, audio = evaluar_segmento(path)
             valores_psd.append(psd_var)
             valores_entropia.append(entropia)
-
-            # print(f"{fname} → PSD var: {psd_var:.3e}, Entropía: {entropia:.2f}")
-
-            if psd_var < UMBRAL_PSD_VAR : # or entropia < UMBRAL_ENTROPIA:
-                score = psd_var + entropia
-                descartados.append((score, path, audio))
+            resultados.append((psd_var, entropia, path, audio))
         except Exception as e:
             print(f"Error con {fname}: {e}")
-    
-    # Ordenar por score (más altos = más dudosos)
-    descartados.sort(reverse=True, key=lambda x: x[0])
-    print(f"Total segmentos descartados: {len(descartados)}")
 
+    # Paso 2: calcular umbrales
     psd_umbral = np.percentile(valores_psd, 5)
     entropia_umbral = np.percentile(valores_entropia, 5)
-    print(f"Umbral PSD auto: {psd_umbral:.3e}")
-    print(f"Umbral entropía auto: {entropia_umbral:.2f}")
+    print(f"Umbral PSD auto (percentil 5%): {psd_umbral:.3e}")
+    print(f"Umbral entropía auto (percentil 5%): {entropia_umbral:.2f}")
 
+    # Paso 3: filtrar usando umbrales
+    descartados = []
+    for psd_var, entropia, path, audio in resultados:
+        if psd_var < psd_umbral: # or entropia < entropia_umbral:
+            score = psd_var + entropia
+            descartados.append((score, path, audio))
+
+    # Ordenar por score (opcional)
+    descartados.sort(reverse=True, key=lambda x: x[0])
+    print(f"Total segmentos descartados: {len(descartados)}")
     return descartados
 
 # ========= Visualización e interacción =========
