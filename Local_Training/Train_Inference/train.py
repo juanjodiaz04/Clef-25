@@ -128,7 +128,7 @@ def evaluar_modelo(model, val_dl, le, device, output_dir, log, timestamp, title=
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Entrenamiento de clasificador CNN con embeddings BirdNET")
-    parser.add_argument("--csv", type=str, required=True, help="Ruta al archivo CSV de embeddings")
+    parser.add_argument("--csv", type=str, default="embeddings_csv/embeddings_MT_overlap.csv", help="Ruta al archivo CSV de embeddings")
     parser.add_argument("--output", type=str, default="outputs", help="Directorio base de salida")
     parser.add_argument("--epochs", type=int, default=20, help="Número de epocas de entrenamiento")
     parser.add_argument("--model_type", type=str, default="resnet18", help="Tipo de modelo a usar: 'resnet18' o 'mlp'")
@@ -177,7 +177,7 @@ if __name__ == "__main__":
 
 # ======================= EXECUTION========================
 # DEFAULT EXECUTION 
-# python Train_Inference/train.py --csv embeddings_csv/embeddings_MT_overlap.csv --epochs 5 --model_type efficientnet_b7
+# python Train_Inference/train.py --epochs 30 --model_type efficientnet_b7
 
 # default Args
 # --output outputs/ 

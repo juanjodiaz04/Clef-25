@@ -43,7 +43,7 @@ def procesar_audio(audio_path, input_dir, output_dir, segment_duration):
                 end_sample = int(min((i + 1) * segment_duration * samplerate, len(data)))
                 segment_data = data[start_sample:end_sample]
 
-                if len(segment_data) < segment_duration * samplerate and len(segment_data) > 0:
+                if len(segment_data) < segment_duration * samplerate and len(segment_data) > 2*samplerate:
                     num_repeats = int(np.ceil((segment_duration * samplerate) / len(segment_data)))
                     segment_data = np.tile(segment_data, num_repeats)[:int(segment_duration * samplerate)]
                     logging.info(f"Extendiendo audio: {audio_path}")
@@ -55,7 +55,7 @@ def procesar_audio(audio_path, input_dir, output_dir, segment_duration):
 
         else:
             segment_data = data
-            if len(segment_data) < segment_duration * samplerate and len(segment_data) > 0:
+            if len(segment_data) < segment_duration * samplerate and len(segment_data) > 2*samplerate:
                 num_repeats = int(np.ceil((segment_duration * samplerate) / len(segment_data)))
                 segment_data = np.tile(segment_data, num_repeats)[:int(segment_duration * samplerate)]
                 logging.info(f"Extendiendo audio: {audio_path}")

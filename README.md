@@ -86,13 +86,13 @@ deactivate
 ```bash
 
 # Escoger el entorno de embeddings desde (~/Workspace)
-source env-emb/bin/activate
+source env-class/bin/activate
 
 # Moverse a la carpeta de Local_Training
 cd Local_Training
 
 # Ejecutar Segmentación de Audios a 5s
-python Segment_Audio/segment.py --input raw_audios/ --output audios/ --duration 5 --threads 4 --log Segment_Audio/segmentador.log
+python Segment_Audio/segment.py --threads 16
 
 ```
 
@@ -106,7 +106,7 @@ python Segment_Audio/segment.py --input raw_audios/ --output audios/ --duration 
 cd BirdNET-Analyzer-1.5.1
 
 # Ejecutar generación de embeddings
-python -m birdnet_analyzer.embeddings --i ../audios/ --o ../embeddings/ --threads 4
+python -m birdnet_analyzer.embeddings --i ../audios/ --o ../embeddings/ --threads 16
 deactivate
 
 ```
@@ -127,10 +127,10 @@ source env-class/bin/activate
 cd Local_Training
 
 # Versión sin solapamiento (chunks independientes de 5s)
-python embed2csv/embed_MT_P_NOV.py --input embeddings --output embeddings_csv/embeddings_MT_noverlap.csv --chunks 3 --threads 4 --agg mean
+python embed2csv/embed_MT_P_NOV.py --threads 16
 
 # Versión con solapamiento (overlapping chunks)
-python embed2csv/embed_MT_P_OV.py --input embeddings --output embeddings_csv/embeddings_MT_overlap.csv --chunks 3 --threads 4 --agg mean
+python embed2csv/embed_MT_P_OV.py --threads 16 
 ```
 
 ---
@@ -139,7 +139,7 @@ python embed2csv/embed_MT_P_OV.py --input embeddings --output embeddings_csv/emb
 
 ```bash
 
-python Train_Inference/train.py --csv embeddings_csv/embeddings_MT_overlap.csv --output outputs --epochs 20 --model_type efficientnet_b7
+python Train_Inference/train.py --epochs 40 --model_type mlp
 
 ```
 
