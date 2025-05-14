@@ -222,7 +222,7 @@ if __name__ == "__main__":
     log(f"\nLabel encoder guardado en '{encoder_path}'")
     log(f"Tiempo total de entrenamiento: {elapsed_time:.2f} segundos")
 
-    # ======================= EXECUTION========================
+# ======================= EXECUTION========================
 # DEFAULT EXECUTION 
 # python Train_Inference/train_TVT.py --epochs 20 --model_type mlp
 

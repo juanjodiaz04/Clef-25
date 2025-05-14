@@ -67,3 +67,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     mover_archivos_mt(txt_path=args.input, carpeta_destino=args.output, max_workers=args.threads)
+
+# ======================= EXECUTION========================
+# DEFAULT EXECUTION 
+# python PSD/move_files.py --threads 16
+
+# default Args
+# --input PSD/discarded.txt
+# --output silence
+# --threads 4

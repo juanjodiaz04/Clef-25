@@ -90,3 +90,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     procesar_directorio_raiz_mt(args.input, args.output, args.threads)
     print(f"\n Proceso terminado. Log guardado en '{args.output}'.")
+
+# ======================= EXECUTION========================
+# DEFAULT EXECUTION 
+# python PSD/silence_detection.py --threads 16
+
+# default Args
+# --input audios
+# --output PSD/discarded.txt
+# --threads 4
