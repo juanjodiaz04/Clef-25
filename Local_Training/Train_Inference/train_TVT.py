@@ -39,12 +39,12 @@ def log_hardware(log):
     log("")
 
 
-def cargar_datos_separados(train_csv, val_csv, test_csv, BASE_DIR):
+def cargar_datos_separados(BASE_DIR):
     
     # Dirs
-    train_csv = os.path.join(BASE_DIR, train_csv)
-    val_csv = os.path.join(BASE_DIR, val_csv)
-    test_csv = os.path.join(BASE_DIR, test_csv)
+    train_csv = os.path.join(BASE_DIR, "train.csv")
+    val_csv = os.path.join(BASE_DIR, "val.csv")
+    test_csv = os.path.join(BASE_DIR, "test.csv")
 
     # Load train data
     train_df = pd.read_csv(train_csv, dtype={"label": str})
@@ -80,21 +80,27 @@ def cargar_datos_separados(train_csv, val_csv, test_csv, BASE_DIR):
 
     return train_ds, val_ds, test_ds, le, num_classes
 
-def entrenar_modelo(model, train_dl, val_dl, device, log, epochs=20):
+def entrenar_modelo(model, train_dl, val_dl, device, log, epochs=20, val_interval=1, output_dir="."):
     """
-    Entrena el modelo y evalúa en el conjunto de validación después de cada época.
+    Entrena el modelo y evalúa en el conjunto de validación cada `val_interval` épocas. 
+    Guarda un gráfico de pérdidas al final.
 
     Args:
         model: El modelo a entrenar.
-        train_dl: DataLoader para el conjunto de entrenamiento.
-        val_dl: DataLoader para el conjunto de validación.
-        device: Dispositivo (CPU o GPU).
-        log: Función para registrar mensajes.
-        epochs: Número de épocas de entrenamiento.
+        train_dl: DataLoader para entrenamiento.
+        val_dl: DataLoader para validación.
+        device: CPU o GPU.
+        log: Función para imprimir y guardar log.
+        epochs: Número de épocas.
+        val_interval: Cada cuántas épocas se evalúa el modelo.
+        output_dir: Carpeta donde guardar el gráfico.
     """
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.CrossEntropyLoss()
-    best_val_loss = float('inf')  # Para rastrear la mejor pérdida de validación
+
+    train_losses = []
+    val_losses = []
+    val_epochs = []
 
     for epoch in range(1, epochs + 1):
         # Entrenamiento
@@ -108,26 +114,41 @@ def entrenar_modelo(model, train_dl, val_dl, device, log, epochs=20):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+
         avg_loss = total_loss / len(train_dl)
-        log(f"Epoca {epoch}: Train Loss = {avg_loss:.4f}")
+        train_losses.append(avg_loss)
+        log(f"Época {epoch}: Train Loss = {avg_loss:.4f}")
 
         # Validación
-        model.eval()
-        val_loss = 0
-        with torch.no_grad():
-            for xb, yb in val_dl:
-                xb, yb = xb.to(device), yb.to(device).long()
-                pred = model(xb)
-                loss = criterion(pred, yb)
-                val_loss += loss.item()
-        avg_val_loss = val_loss / len(val_dl)
-        log(f"Epoca {epoch}: Validation Loss = {avg_val_loss:.4f}")
+        if epoch % val_interval == 0 or epoch == epochs:
+            model.eval()
+            val_loss = 0
+            with torch.no_grad():
+                for xb, yb in val_dl:
+                    xb, yb = xb.to(device), yb.to(device).long()
+                    pred = model(xb)
+                    loss = criterion(pred, yb)
+                    val_loss += loss.item()
 
-        # Guardar el mejor modelo basado en la pérdida de validación
-        if avg_val_loss < best_val_loss:
-            best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), "best_model.pth")
-            log("Modelo mejorado guardado.")
+            avg_val_loss = val_loss / len(val_dl)
+            val_losses.append(avg_val_loss)
+            val_epochs.append(epoch)
+            log(f"Época {epoch}: Validation Loss = {avg_val_loss:.4f}")
+
+    # ==== Graficar pérdidas ====
+    plt.figure(figsize=(8, 5))
+    plt.plot(range(1, epochs + 1), train_losses, label="Train Loss", marker='o')
+    plt.plot(val_epochs, val_losses, label="Validation Loss", marker='x')
+    plt.xlabel("Épocas")
+    plt.ylabel("Loss")
+    plt.title("Pérdida por época")
+    plt.legend()
+    plt.grid(True)
+
+    loss_plot_path = os.path.join(output_dir, "loss_plot.png")
+    plt.savefig(loss_plot_path)
+    plt.close()
+    log(f"Gráfico de pérdidas guardado en: {loss_plot_path}")
 
 def evaluar_modelo(model, val_dl, le, device, output_dir, log, timestamp, title=""):
     model.eval()
@@ -157,7 +178,7 @@ def evaluar_modelo(model, val_dl, le, device, output_dir, log, timestamp, title=
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Entrenamiento de clasificador CNN con embeddings BirdNET")
-    parser.add_argument("--csv", type=str, required=True, help="Ruta al archivo CSV de embeddings")
+    parser.add_argument("--csv", default="embeddings_csv", help="Archivo CSV de entrenamiento")
     parser.add_argument("--output", type=str, default="outputs", help="Directorio base de salida")
     parser.add_argument("--epochs", type=int, default=20, help="Número de epocas de entrenamiento")
     parser.add_argument("--model_type", type=str, default="resnet18", help="Tipo de modelo a usar: 'resnet18' o 'mlp'")
@@ -170,8 +191,7 @@ if __name__ == "__main__":
     log, log_file = configurar_logs(run_output_dir, timestamp)
     log_hardware(log)
 
-    #train_ds, val_ds, le, num_classes = cargar_datos(args.csv)
-    train_ds, val_ds, test_ds, le, num_classes = cargar_datos_separados(args.train_csv, args.val_csv, args.test_csv, BASE_DIR="")
+    train_ds, val_ds, test_ds, le, num_classes = cargar_datos_separados(args.csv)
     train_dl = DataLoader(train_ds, batch_size=32, shuffle=True)
     val_dl = DataLoader(val_ds, batch_size=32)
     test_dl = DataLoader(test_ds, batch_size=32)
@@ -188,7 +208,7 @@ if __name__ == "__main__":
     log(f"Modelo cargado y movido a {device}")
     start_time = time.time()
     #entrenar_modelo(model, train_dl, device, log, epochs=args.epochs)
-    entrenar_modelo(model, train_dl, val_dl, device, log, epochs=args.epochs)
+    entrenar_modelo(model, train_dl, val_dl, device, log, epochs=args.epochs, output_dir=run_output_dir)
     elapsed_time = time.time() - start_time
 
     # Evaluate on test
@@ -201,3 +221,13 @@ if __name__ == "__main__":
     log(f"\nModelo guardado en '{model_path}'")
     log(f"\nLabel encoder guardado en '{encoder_path}'")
     log(f"Tiempo total de entrenamiento: {elapsed_time:.2f} segundos")
+
+    # ======================= EXECUTION========================
+# DEFAULT EXECUTION 
+# python Train_Inference/train_TVT.py --epochs 20 --model_type mlp
+
+# default Args
+# --csv embeddings_csv
+# --output outputs
+# --epochs 20
+# --model_type resnet18

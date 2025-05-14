@@ -109,6 +109,11 @@ cd BirdNET-Analyzer-1.5.1
 python -m birdnet_analyzer.embeddings --i ../audios/ --o ../embeddings/ --threads 16
 deactivate
 
+# Ejecutar generación de embeddings por folder
+python -m birdnet_analyzer.embeddings --i ../TVT/train/ --o ../TVT/emb_train/ --threads 16
+python -m birdnet_analyzer.embeddings --i ../TVT/val/ --o ../embeddings/emb_val/ --threads 16
+python -m birdnet_analyzer.embeddings --i ../TVT/test/ --o ../embeddings/emb_test --threads 16
+
 ```
 
 ---
@@ -131,6 +136,12 @@ python embed2csv/embed_MT_P_NOV.py --threads 16
 
 # Versión con solapamiento (overlapping chunks)
 python embed2csv/embed_MT_P_OV.py --threads 16 
+
+# CSV por folder
+python embed2csv/embed_MT_P_OV.py --input TVT/emb_train/ --output embeddings_csv/train.csv --threads 16
+python embed2csv/embed_MT_P_OV.py --input TVT/emb_val/ --output embeddings_csv/val.csv --threads 16
+python embed2csv/embed_MT_P_OV.py --input TVT/emb_test/ --output embeddings_csv/test.csv --threads 16 
+
 ```
 
 ---
@@ -140,6 +151,9 @@ python embed2csv/embed_MT_P_OV.py --threads 16
 ```bash
 
 python Train_Inference/train.py --epochs 40 --model_type mlp
+
+# Entrenamiento con folders
+python Train_Inference/train_TVT.py --epochs 40 --model_type mlp
 
 ```
 

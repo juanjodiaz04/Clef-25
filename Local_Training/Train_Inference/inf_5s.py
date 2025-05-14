@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
 # ======================= EXECUTION========================
 # DEFAULT EXECUTION 
-# python Train_Inference/inf_2.py --csv embeddings_csv/embeddings_MT_overlap.csv --run 12_1323 --model_type efficientnet_b7
+# python Train_Inference/inf_5s.py --csv embeddings_csv/embeddings_MT_overlap.csv --run 12_1323 --model_type efficientnet_b7
 
 # default Args
 # --sample-sub CSV/sample_submission.csv

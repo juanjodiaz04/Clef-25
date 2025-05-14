@@ -10,6 +10,7 @@ audios/
 embeddings/
 raw_audios/
 silence/
+TVT/
 
 # Inputs Kaggle
 Inputs/
