@@ -48,7 +48,7 @@ def procesar_audio(audio_path, input_dir, output_dir, segment_duration):
                     segment_data = np.tile(segment_data, num_repeats)[:int(segment_duration * samplerate)]
                     logging.info(f"Extendiendo audio: {audio_path}")
 
-                if len(segment_data) > 0:
+                if len(segment_data) > 0 and len(segment_data) > 2*samplerate:
                     segment_path = os.path.join(output_subfolder, f"{filename}_{i}.ogg")
                     sf.write(segment_path, segment_data, samplerate)
                     segmentos_generados += 1
@@ -60,7 +60,7 @@ def procesar_audio(audio_path, input_dir, output_dir, segment_duration):
                 segment_data = np.tile(segment_data, num_repeats)[:int(segment_duration * samplerate)]
                 logging.info(f"Extendiendo audio: {audio_path}")
 
-            if len(segment_data) > 0:
+            if len(segment_data) > 0 and len(segment_data) > 2*samplerate:
                 segment_path = os.path.join(output_subfolder, f"{filename}_0.ogg")
                 sf.write(segment_path, segment_data, samplerate)
                 segmentos_generados += 1
