@@ -17,33 +17,32 @@ TOP_K = 20
 # ========= Argumentos por consola =========
 parser = argparse.ArgumentParser(description="Filtrar y visualizar segmentos de una especie específica.")
 parser.add_argument("--species", type=str, default="yelori1", help="Nombre de la subcarpeta dentro de 'audios'")
+parser.add_argument("--output", type=str, default="testing", help="Ruta al directorio raíz con subcarpetas por especie")
+parser.add_argument("--input", type=str, default="audios", help="Ruta al directorio raíz con subcarpetas por especie")
+parser.add_argument("--filter", type=str, default="psd", choices=["psd", "entropy", "combined"],help="Tipo de filtro")
 args = parser.parse_args()
 
-FOLDER = os.path.join("audios", args.species)
+FOLDER = os.path.join(args.input, args.species)
 
 # ========= Métricas =========
 def calcular_psd(audio, sr):
     _, psd = welch(audio, sr, nperseg=1024)
     return np.var(psd)
 
-def contar_bandas_inactivas(audio, sr, threshold_db=-40, n_fft=1024):
-    # Calcular espectrograma en dB
+def obtener_bandas_inactivas(audio, sr, threshold_db=-40, n_fft=1024, n_bandas=16):
     S = librosa.amplitude_to_db(np.abs(librosa.stft(audio, n_fft=n_fft)), ref=np.max)
-
-    # Dividir el eje de frecuencias en 16 bandas uniformes
-    n_bandas = 16
     bins_por_banda = S.shape[0] // n_bandas
+    bandas_inactivas = []
 
-    bandas_inactivas = 0
     for i in range(n_bandas):
         inicio = i * bins_por_banda
         fin = (i + 1) * bins_por_banda if i < n_bandas - 1 else S.shape[0]
         banda = S[inicio:fin, :]
         energia_promedio = np.mean(banda)
         if energia_promedio < threshold_db:
-            bandas_inactivas += 1
+            bandas_inactivas.append((inicio, fin))  # guardamos los índices
 
-    return bandas_inactivas
+    return bandas_inactivas, S.shape  # también retornamos la forma del espectrograma
 
 def calcular_psd_ventanas(audio, sr, n_ventanas=10):
     duracion_total = len(audio) / sr
@@ -61,7 +60,7 @@ def calcular_psd_ventanas(audio, sr, n_ventanas=10):
             continue  # saltar si el segmento es demasiado corto
 
         _, psd = welch(segmento, sr, nperseg=512)
-        psd_total = np.median(psd)  
+        psd_total = np.mean(psd)  
         psd_totales.append(psd_total)
     
     return np.var(psd_totales)
@@ -74,36 +73,78 @@ def calcular_entropia_espectral(audio, sr, n_fft=2048, hop_length=512):
     entropias = entropy(S_norm, base=2, axis=0)
     return np.nanmean(entropias)
 
-# ========= Evaluar un archivo =========
-def evaluar_segmento(path, IB_UMBRAL=4):
-    audio, sr = librosa.load(path, sr=SR)
+def calcular_entropia_espectral_ventanas(audio, sr, n_ventanas=10, n_fft=2048, hop_length=512):
+    duracion_total = len(audio) / sr
+    duracion_ventana = duracion_total / n_ventanas
+    samples_por_ventana = int(sr * duracion_ventana)
 
-    # Si hay bandas inactivas, agregar ruido
-    bandas_inactivas = contar_bandas_inactivas(audio, sr)
-    if bandas_inactivas > IB_UMBRAL:  # Cambia este umbral según sea necesario
-        audio = agregar_ruido_gaussiano(audio, snr_db=35)
-        audio = rellenar_silencios(audio, threshold=1e-6, ruido_std=1e-5)
+    entropias = []
 
-    psd_var = calcular_psd(audio, sr)
-    entropia = calcular_entropia_espectral(audio, sr)
+    for i in range(n_ventanas):
+        inicio = i * samples_por_ventana
+        fin = inicio + samples_por_ventana
+        segmento = audio[inicio:fin]
 
-    return psd_var, entropia, audio
+        if len(segmento) < hop_length * 2:
+            continue  # Evitar segmentos demasiado pequeños
+
+        S = np.abs(librosa.stft(segmento, n_fft=n_fft, hop_length=hop_length))**2
+        suma = np.sum(S, axis=0, keepdims=True)
+        suma[suma == 0] = 1e-10
+        S_norm = S / suma
+        entropia_segmento = entropy(S_norm, base=2, axis=0)
+        entropias.append(np.nanmean(entropia_segmento))
+
+    return np.var(entropias)
+
 
 # ========= Ruido Aditivo =========
-def agregar_ruido_gaussiano(audio, snr_db=35):
-    rms_signal = np.sqrt(np.mean(audio**2))
-    if rms_signal < 1e-8:  # evita división por 0 en señales muy bajas
-        rms_signal = 1e-8
-    snr_linear = 10 ** (snr_db / 10)
-    rms_noise = rms_signal / np.sqrt(snr_linear)
-    ruido = np.random.normal(0, rms_noise, audio.shape)
-    return audio + ruido
+def rellenar_bandas_inactivas(audio, sr, bandas_inactivas, shape_S, n_fft=1024, factor_ruido=2):
+    # STFT compleja
+        # STFT compleja
+    S_complex = librosa.stft(audio, n_fft=n_fft)
 
-def rellenar_silencios(audio, threshold=1e-6, ruido_std=1e-5):
-    audio = audio.copy()
-    zonas_planas = np.abs(audio) < threshold
-    audio[zonas_planas] += np.random.normal(0, ruido_std, size=np.sum(zonas_planas))
-    return audio
+    # Calcular RMS de la señal original (dominio temporal)
+    rms = np.sqrt(np.mean(audio**2))
+    if rms < 1e-8:
+        rms = 1e-8  # prevenir división por cero
+
+    # Añadir ruido en las bandas inactivas
+    for inicio, fin in bandas_inactivas:
+        ruido_mag = np.random.normal(0, rms * factor_ruido, size=S_complex[inicio:fin, :].shape)
+        fase = np.exp(1j * np.angle(S_complex[inicio:fin, :]))
+        S_complex[inicio:fin, :] += ruido_mag * fase
+
+    # Reconstrucción del audio
+    audio_modificado = librosa.istft(S_complex)
+    return audio_modificado
+
+# ========= Evaluar un archivo =========
+def evaluar_segmento(path, IB_UMBRAL=1, noisy_output_dir="noisy"):
+    audio, sr = librosa.load(path, sr=SR)
+
+    '''
+    # Si hay bandas inactivas, agregar ruido
+    bandas, shape_S = obtener_bandas_inactivas(audio, sr)
+    if len(bandas) > IB_UMBRAL:
+        audio = rellenar_bandas_inactivas(audio, sr, bandas, shape_S)
+
+        # Guardar audio modificado
+        noisy_species_dir = os.path.join(noisy_output_dir, args.species)
+        os.makedirs(noisy_species_dir, exist_ok=True)
+        base_name = os.path.basename(path)
+        noisy_path = os.path.join(noisy_species_dir, base_name)
+        sf.write(noisy_path, audio, sr)
+        #print(f"Guardado con ruido: {noisy_path}")
+    '''
+
+    psd_var = calcular_psd_ventanas(audio, sr)
+    entropia = calcular_entropia_espectral_ventanas(audio, sr)
+
+    #psd_var = calcular_psd(audio, sr)
+    #entropia = calcular_entropia_espectral(audio, sr)
+
+    return psd_var, entropia, audio
 
 # ========= Buscar y filtrar =========
 def filtrar_segmentos(audio_folder):
@@ -117,7 +158,7 @@ def filtrar_segmentos(audio_folder):
     for fname in tqdm(archivos, desc="Procesando segmentos"):
         path = os.path.join(audio_folder, fname)
         try:
-            psd_var, entropia, audio = evaluar_segmento(path)
+            psd_var, entropia, audio = evaluar_segmento(path, noisy_output_dir=args.output)
             valores_psd.append(psd_var)
             valores_entropia.append(entropia)
             resultados.append((psd_var, entropia, path, audio))
@@ -133,12 +174,14 @@ def filtrar_segmentos(audio_folder):
     # Paso 3: filtrar usando umbrales
     descartados = []
     for psd_var, entropia, path, audio in resultados:
-        #psd_var < psd_umbral: or 
-        #entropia < entropia_umbral:
-        if psd_var < psd_umbral:
-            #score = entropia
+        if args.filter == "psd" and psd_var < psd_umbral:
             score = psd_var
-            # score = psd_var + entropia
+            descartados.append((score, path, audio))
+        elif args.filter == "entropy" and entropia < entropia_umbral:
+            score = entropia
+            descartados.append((score, path, audio))
+        elif args.filter == "combined" and (psd_var < psd_umbral or entropia < entropia_umbral):
+            score = psd_var + entropia
             descartados.append((score, path, audio))
 
     # Ordenar por score (opcional)
@@ -191,7 +234,7 @@ def mostrar_segmentos(descartados):
                 audio, path = paths[i]
                 audio_ps, sr = librosa.load(path, sr=SR)
                 psd_var = calcular_psd_ventanas(audio_ps, sr)
-                entropia = calcular_entropia_espectral(audio_ps, sr)
+                entropia = calcular_entropia_espectral_ventanas(audio_ps, sr)
 
                 print(f"Reproduciendo: {path}", f"PSD: {psd_var:.3e}", f"Entropía: {entropia:.2f}")
                 sd.stop()
