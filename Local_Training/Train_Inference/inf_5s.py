@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 def main():
     parser = argparse.ArgumentParser(description="Inferencia para BirdCLEF")
-    parser.add_argument("--csv", type=str, required=True, help="Archivo CSV con embeddings")
+    parser.add_argument("--csv", type=str, required=True, help="Archivo CSV para inferencia")
     parser.add_argument("--run", type=str, required=True, help="ID del run (ej. 05_1925)")
     parser.add_argument("--sample-sub", type=str, default="CSV/sample_submission.csv", help="Archivo sample_submission.csv con columnas esperadas")
     parser.add_argument("--model_type", type=str, default="resnet18", help="Tipo de modelo a usar: 'resnet18' o 'mlp'")
@@ -96,7 +96,6 @@ if __name__ == "__main__":
 # ======================= EXECUTION========================
 # DEFAULT EXECUTION 
 # python Train_Inference/inf_2.py --csv embeddings_csv/embeddings_MT_overlap.csv --run 12_1323 --model_type efficientnet_b7
-
 
 # default Args
 # --sample-sub CSV/sample_submission.csv

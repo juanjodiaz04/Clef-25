@@ -59,9 +59,11 @@ def procesar_carpeta(carpeta):
     return (os.path.basename(carpeta), descartados)
 
 def procesar_directorio_raiz_mt(directorio_raiz, archivo_log="discarded.txt", max_workers=None):
-    subcarpetas = [os.path.join(directorio_raiz, d)
-                   for d in sorted(os.listdir(directorio_raiz))
-                   if os.path.isdir(os.path.join(directorio_raiz, d))]
+    subcarpetas = [
+        os.path.join(directorio_raiz, d)
+        for d in sorted(os.listdir(directorio_raiz))
+        if os.path.isdir(os.path.join(directorio_raiz, d)) and d[0].isalpha()
+    ]
 
     resultados = []
 
@@ -82,7 +84,7 @@ def procesar_directorio_raiz_mt(directorio_raiz, archivo_log="discarded.txt", ma
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Filtrado de segmentos silenciosos o planos en múltiples carpetas")
     parser.add_argument("--input", type=str, default="audios", help="Ruta al directorio raíz con subcarpetas por especie")
-    parser.add_argument("--output", type=str, default="PSD/archivos_descartados.txt", help="Archivo de log de salida")
+    parser.add_argument("--output", type=str, default="PSD/discarded.txt", help="Archivo de log de salida")
     parser.add_argument("--threads", type=int, default=4, help="Número de hilos paralelos")
 
     args = parser.parse_args()

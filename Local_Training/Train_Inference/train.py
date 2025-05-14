@@ -180,6 +180,7 @@ if __name__ == "__main__":
 # python Train_Inference/train.py --epochs 30 --model_type efficientnet_b7
 
 # default Args
+# --csv embeddings_csv/embeddings_MT_overlap.csv
 # --output outputs/ 
 # --epochs 20 
 # --model_type resnet18
