@@ -97,6 +97,7 @@ def entrenar_modelo(model, train_dl, val_dl, device, log, epochs=20, val_interva
     """
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.CrossEntropyLoss()
+    best_val_loss = float('inf')
 
     train_losses = []
     val_losses = []
@@ -134,6 +135,11 @@ def entrenar_modelo(model, train_dl, val_dl, device, log, epochs=20, val_interva
             val_losses.append(avg_val_loss)
             val_epochs.append(epoch)
             log(f"Época {epoch}: Validation Loss = {avg_val_loss:.4f}")
+
+            if avg_val_loss < best_val_loss:
+                best_val_loss = avg_val_loss
+                torch.save(model.state_dict(), os.path.join(output_dir, "best_model.pt"))
+                log("Modelo mejorado guardado.")
 
     # ==== Graficar pérdidas ====
     plt.figure(figsize=(8, 5))

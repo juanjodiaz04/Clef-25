@@ -14,6 +14,27 @@ def calcular_psd(audio, sr):
     _, psd = welch(audio, sr, nperseg=1024)
     return np.var(psd)
 
+def calcular_psd_ventanas(audio, sr, n_ventanas=10):
+    duracion_total = len(audio) / sr
+    duracion_ventana = duracion_total / n_ventanas
+    samples_por_ventana = int(sr * duracion_ventana)
+    
+    psd_totales = []
+    
+    for i in range(n_ventanas):
+        inicio = i * samples_por_ventana
+        fin = inicio + samples_por_ventana
+        segmento = audio[inicio:fin]
+
+        if len(segmento) < 2:
+            continue  # saltar si el segmento es demasiado corto
+
+        _, psd = welch(segmento, sr, nperseg=512)
+        psd_total = np.sum(psd)  # o np.mean(psd), dependiendo del criterio
+        psd_totales.append(psd_total)
+    
+    return np.var(psd_totales)
+
 def calcular_entropia_espectral(audio, sr, n_fft=2048, hop_length=512):
     S = np.abs(librosa.stft(audio, n_fft=n_fft, hop_length=hop_length))**2
     suma = np.sum(S, axis=0, keepdims=True)

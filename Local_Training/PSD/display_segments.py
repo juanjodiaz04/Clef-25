@@ -117,7 +117,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Visualizar y analizar archivos .ogg en una carpeta.")
     parser.add_argument("--species", type=str, required=True, help="Carpeta con archivos .ogg")
-    parser.add_argument("--folder", type=str, default="silence", help="Carpeta con archivos .ogg descartados")
+    parser.add_argument("--folder", type=str, default="audios", help="Carpeta con archivos .ogg descartados")
     args = parser.parse_args()
 
     species_path = os.path.join(args.folder, args.species)
