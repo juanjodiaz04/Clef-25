@@ -85,7 +85,7 @@ deactivate
 
 ```bash
 
-# Escoger el entorno de embeddings desde (~/Workspace)
+# Escoger el entorno de clasificación desde (~/Workspace)
 source env-class/bin/activate
 
 # Moverse a la carpeta de Local_Training
