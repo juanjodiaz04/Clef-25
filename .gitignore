@@ -13,6 +13,8 @@ silence/
 TVT/
 short/
 testing/
+original/
+vgg19_voice_classification.pth
 
 # Inputs Kaggle
 Inputs/

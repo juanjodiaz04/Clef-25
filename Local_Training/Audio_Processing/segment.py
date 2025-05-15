@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
 # ======================= EXECUTION========================
 # DEFAULT EXECUTION 
-# python Segment_Audio/segment.py --threads 4
+# python Audio_Processing/segment.py --threads 4
 
 # default Args
 # --input raw_audios/ 

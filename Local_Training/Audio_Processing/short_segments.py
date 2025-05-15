@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
 # ======================= EXECUTION========================
 # DEFAULT EXECUTION 
-# python Segment_Audio/short_segments.py
+# python Audio_Processing/short_segments.py
 
 # default Args
 # --input audios 

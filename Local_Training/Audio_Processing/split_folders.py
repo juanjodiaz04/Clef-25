@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
 # ======================= EXECUTION========================
 # DEFAULT EXECUTION 
-# python Segment_Audio/split_folders.py
+# python Audio_Processing/split_folders.py
 
 # default Args
 # --input audios
