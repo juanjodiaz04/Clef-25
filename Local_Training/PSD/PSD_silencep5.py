@@ -6,14 +6,14 @@ import librosa
 import matplotlib.pyplot as plt
 import sounddevice as sd
 from scipy.signal import welch
-from scipy.stats import entropy
+from scipy.stats import entropy, kurtosis
 from matplotlib.widgets import Button
 from tqdm import tqdm
 
 # ========= Parámetros fijos =========
 SR = 32000
 TOP_K = 20
-PERCENTILE = 100  # Percentil para determinar el umbral (default: 100%)
+PERCENTILE = 5  # Percentil para determinar el umbral (default: 100%)
 
 # ========= Métricas =========
 def calcular_psd_ventanas(audio, sr, n_ventanas=20):
@@ -55,55 +55,67 @@ def calcular_entropia_espectral_ventanas(audio, sr, n_ventanas=10, n_fft=2048, h
 
     return np.var(entropias) if len(entropias) >= 2 else 0.0
 
+def calcular_kurtosis_tiempo_ventanas(audio, sr, n_ventanas=10):
+    duracion_total = len(audio) / sr
+    duracion_ventana = duracion_total / n_ventanas
+    muestras_por_ventana = int(sr * duracion_ventana)
+    kurts = []
+    for i in range(n_ventanas):
+        seg = audio[i*muestras_por_ventana:(i+1)*muestras_por_ventana]
+        if len(seg) < 2:
+            continue
+        # normalizar amplitudes en [-1,1]
+        seg_norm = seg / (np.max(np.abs(seg)) + 1e-10)
+        # curtosis en tiempo
+        kurts.append(kurtosis(seg_norm, fisher=False))
+    return np.var(kurts) if len(kurts) >= 2 else 0.0
+
 # ========= Evaluar un archivo =========
 def evaluar_segmento(path):
-    """Carga un audio y calcula PSD y entropía en ventanas."""
     audio, _ = librosa.load(path, sr=SR)
-    psd_var = calcular_psd_ventanas(audio, SR)
-    entropia_var = calcular_entropia_espectral_ventanas(audio, SR)
-    return psd_var, entropia_var, audio
+    return (
+        calcular_psd_ventanas(audio, SR),
+        calcular_entropia_espectral_ventanas(audio, SR),
+        calcular_kurtosis_tiempo_ventanas(audio, SR),
+        audio
+    )
 
 # ========= Buscar y filtrar =========
 def filtrar_segmentos(audio_folder, filt="psd"):
-    """Filtra segmentos de audio basados en PSD y/o entropía espectral."""
-    resultados = []
-    valores_psd = []
-    valores_entropia = []
-
+    resultados, v_psd, v_ent, v_kurt = [], [], [], []
     archivos = [f for f in os.listdir(audio_folder) if f.endswith(".ogg")]
     if not archivos:
-        print(f"No se encontraron archivos .ogg en {audio_folder}")
-        return []
+        print(f"No .ogg en {audio_folder}"); return []
 
-    for fname in tqdm(archivos, desc=f"Procesando {audio_folder}"):
-        path = os.path.join(audio_folder, fname)
+    for f in tqdm(archivos, desc=f"Procesando {audio_folder}"):
+        p = os.path.join(audio_folder,f)
         try:
-            psd_var, ent_var, audio = evaluar_segmento(path)
-            valores_psd.append(psd_var)
-            valores_entropia.append(ent_var)
-            resultados.append((psd_var, ent_var, path, audio))
-        except Exception as e:
-            print(f"Error con {fname}: {e}")
+            psd_var, ent_var, kurt_var, audio = evaluar_segmento(p)
+            resultados.append((psd_var, ent_var, kurt_var, p, audio))
+            v_psd.append(psd_var); v_ent.append(ent_var); v_kurt.append(kurt_var)
+        except:
+            continue
 
-    if not resultados:
-        return []
-
-    psd_umbral = np.percentile(valores_psd, PERCENTILE)
-    ent_umbral = np.percentile(valores_entropia, PERCENTILE)
-    print(f"Umbral PSD (pct {PERCENTILE}%): {psd_umbral:.3e}")
-    print(f"Umbral Entropy (pct {PERCENTILE}%): {ent_umbral:.3f}")
+    # Umbrales
+    umbral_psd  = np.percentile(v_psd,  PERCENTILE)
+    umbral_ent  = np.percentile(v_ent,  PERCENTILE)
+    umbral_kurt = np.percentile(v_kurt, PERCENTILE)
+    print(f"Umbrales → PSD:{umbral_psd:.3e}, Ent:{umbral_ent:.3f}, Kurt:{umbral_kurt:.3f}")
 
     descartados = []
-    for psd_var, ent_var, path, audio in resultados:
-        if filt == "psd" and psd_var < psd_umbral:
+    for psd_var, ent_var, kurt_var, path, audio in resultados:
+        if filt=="psd"  and psd_var  < umbral_psd:
             score = psd_var
-            descartados.append((score, path, audio))
-        elif filt == "ent" and ent_var < ent_umbral:
+        elif filt=="ent" and ent_var < umbral_ent:
             score = ent_var
-            descartados.append((score, path, audio))
+        elif filt=="kurt" and kurt_var < umbral_kurt:
+            score = kurt_var
+        else:
+            continue
+        descartados.append((score, path, audio))
 
     descartados.sort(key=lambda x: x[0])
-    print(f"Total descartados: {len(descartados)} ({len(descartados)/len(resultados)*100:.1f}%)")
+    print(f"Descartados: {len(descartados)}/{len(resultados)}")
     return descartados
 
 # ========= Visualización interactiva =========
@@ -162,7 +174,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Filtrar y mostrar segmentos de audio")
     p.add_argument("--species", default="yelori1", help="Subcarpeta dentro de --input, o 'all'")
     p.add_argument("--input",   default="audios", help="Carpeta raíz de audios")
-    p.add_argument("--filter",  default="psd", choices=["psd","ent"], help="Métrica de filtrado")
+    p.add_argument("--filter",  default="kurt", choices=["psd","ent","kurt"], help="Métrica de filtrado")
     args = p.parse_args()
 
     if args.species=="all":
@@ -183,7 +195,7 @@ if __name__ == "__main__":
 
 # ======================= EXECUTION========================
 # EJEMPLO DE EJECUCIÓN:
-# python PSD/PSD_silencep5.py --species yectyr1 --input audios --filter psd
+# python PSD/PSD_silencep5.py --species yectyr1 --input audios --filter kurt
 
 # default Args
 # --species yelori1

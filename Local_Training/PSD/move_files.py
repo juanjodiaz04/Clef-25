@@ -62,7 +62,7 @@ def mover_archivos_mt(txt_path, carpeta_destino="silencio", max_workers=8):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mover archivos listados en un .txt a una carpeta destino conservando estructura.")
     parser.add_argument("--input", type=str, default="PSD/discarded.txt", help="Ruta al archivo .txt con rutas de archivos a mover.")
-    parser.add_argument("--output", type=str, default="silence", help="Carpeta destino donde se moverán los archivos.")
+    parser.add_argument("--output", type=str, default="original/silence", help="Carpeta destino donde se moverán los archivos.")
     parser.add_argument("--threads", type=int, default=4, help="Número de hilos a usar para mover archivos.")
     args = parser.parse_args()
 

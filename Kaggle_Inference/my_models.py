@@ -1,7 +1,6 @@
 import torchvision.models as models
 import torch
 import torch.nn as nn
-import json
 def get_model(num_classes, model_name = 'resnet18', pretrained=True):
     """
     Crea un modelo ResNet18 modificado para aceptar 1 canal de entrada (en lugar de 3) 
@@ -104,23 +103,20 @@ def get_model(num_classes, model_name = 'resnet18', pretrained=True):
     "wide_resnet101_2": models.wide_resnet101_2
     }
 
-    model = model_dict[model_name](pretrained=pretrained)
-        # Obtener el modelo del diccionario
     if model_name not in model_dict:
         raise ValueError(f"Modelo '{model_name}' no soportado.")
-    model = models.resnet18(pretrained=pretrained)
+    
+    # Paso 1: Cargar el modelo preentrenado
+    model = model_dict[model_name](pretrained=pretrained)
 
     # Paso 2: Reemplazar la primera capa para aceptar 1 canal (no 3)
     model.conv1 = nn.Conv2d(
         in_channels=1, out_channels=64,
         kernel_size=7, stride=2, padding=3, bias=False
     )
-    #Descomentar si se trabaja con librería OpenSoundScapes
     model.fc = nn.Linear(model.fc.in_features, num_classes)
 
     return model
-
-import torch.nn as nn
 
 class MLP(nn.Module):
     def __init__(self, input_size, hidden_sizes, num_classes, activation_fn=nn.ReLU):

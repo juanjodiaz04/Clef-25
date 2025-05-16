@@ -14,7 +14,7 @@ TVT/
 short/
 testing/
 original/
-vgg19_voice_classification.pth
+audios_NA/
 
 # Inputs Kaggle
 Inputs/

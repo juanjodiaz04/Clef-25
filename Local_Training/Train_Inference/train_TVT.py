@@ -188,6 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, default="outputs", help="Directorio base de salida")
     parser.add_argument("--epochs", type=int, default=20, help="Número de epocas de entrenamiento")
     parser.add_argument("--model_type", type=str, default="resnet18", help="Tipo de modelo a usar: 'resnet18' o 'mlp'")
+    parser.add_argument("--pretrained", type=int, default=True, help="Usar pesos preentrenados (1) o no (0)")
     args = parser.parse_args()
 
     timestamp = datetime.datetime.now().strftime("%d_%H%M")
@@ -206,7 +207,7 @@ if __name__ == "__main__":
         input_size = 32 * 96
         model = my_models.get_MLP(num_classes=num_classes, input_size=input_size, hidden_sizes=[256, 128, 64], activation_fn=nn.ReLU)
     else:
-        model = my_models.get_model(num_classes=num_classes, model_name=args.model_type)
+        model = my_models.get_model(num_classes=num_classes, model_name=args.model_type, pretrained=args.pretrained)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -230,10 +231,11 @@ if __name__ == "__main__":
 
 # ======================= EXECUTION========================
 # DEFAULT EXECUTION 
-# python Train_Inference/train_TVT.py --epochs 20 --model_type mlp
+# python Train_Inference/train_TVT.py --epochs 20 --model_type mlp --pretrained False
 
 # default Args
 # --csv embeddings_csv
 # --output outputs
 # --epochs 20
 # --model_type resnet18
+# --pretrained True

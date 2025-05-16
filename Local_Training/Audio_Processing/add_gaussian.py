@@ -70,11 +70,11 @@ if __name__ == "__main__":
 
     with open(args.log, "w") as logf:
         for sp in sorted(especies):
-            descartados = procesar_especie(args.input, args.backup, sp)
+            modificados = procesar_especie(args.input, args.backup, sp)
             # escribir header
-            logf.write(f"# {sp} - {len(descartados)} modificados\n")
+            logf.write(f"# {sp} - {len(modificados)} modificados\n")
             # escribir rutas
-            for ruta in descartados:
+            for ruta in modificados:
                 logf.write(ruta + "\n")
             logf.write("\n")
 
