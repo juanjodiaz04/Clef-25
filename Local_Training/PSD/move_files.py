@@ -58,10 +58,15 @@ def mover_archivos_mt(txt_path, carpeta_destino="silencio", max_workers=8):
             print("  ", err)
         if len(errores) > 5:
             print("  ...")
+    
+    # Guardar copia del log de entrada
+    log_destino = os.path.join(carpeta_destino, "silence_log.txt")
+    shutil.copy(txt_path, log_destino)
+    print(f"\n Copia del log guardada en: {log_destino}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mover archivos listados en un .txt a una carpeta destino conservando estructura.")
-    parser.add_argument("--input", type=str, default="PSD/discarded.txt", help="Ruta al archivo .txt con rutas de archivos a mover.")
+    parser.add_argument("--input", type=str, default="PSD/discarded_L20.txt", help="Ruta al archivo .txt con rutas de archivos a mover.")
     parser.add_argument("--output", type=str, default="original/silence", help="Carpeta destino donde se moverán los archivos.")
     parser.add_argument("--threads", type=int, default=4, help="Número de hilos a usar para mover archivos.")
     args = parser.parse_args()
@@ -73,6 +78,6 @@ if __name__ == "__main__":
 # python PSD/move_files.py --threads 16
 
 # default Args
-# --input PSD/discarded.txt
-# --output silence
+# --input PSD/discarded_L20.txt
+# --output original/silence
 # --threads 4

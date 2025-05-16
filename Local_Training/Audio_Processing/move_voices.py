@@ -59,3 +59,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# ======================= EXECUTION========================
+# DEFAULT EXECUTION 
+# python Audio_Processing/move_voices.py --image_dir audios --audio_dir audios --dest_dir original/voice
+
+# default Args
+# --
