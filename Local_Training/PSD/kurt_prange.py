@@ -13,7 +13,8 @@ from tqdm import tqdm
 # ========= Parámetros fijos =========
 SR = 32000
 TOP_K = 20
-PERCENTILE = 100  # Percentil para determinar el umbral (default: 100%)
+P_MAX = 85
+P_MIN = 25
 
 # ========= Métricas =========
 def calcular_psd_ventanas(audio, sr, n_ventanas=20):
@@ -97,22 +98,28 @@ def filtrar_segmentos(audio_folder, filt="psd"):
             continue
 
     # Umbrales
-    umbral_psd  = np.percentile(v_psd,  PERCENTILE)
-    umbral_ent  = np.percentile(v_ent,  PERCENTILE)
-    umbral_kurt = np.percentile(v_kurt, PERCENTILE)
-    print(f"Umbrales → PSD:{umbral_psd:.3e}, Ent:{umbral_ent:.3f}, Kurt:{umbral_kurt:.3f}")
+    umbral_psd_min  = np.percentile(v_psd,  P_MIN)
+    umbral_psd_max  = np.percentile(v_psd,  P_MAX)
+    umbral_ent_min  = np.percentile(v_ent,  P_MIN)
+    umbral_ent_max  = np.percentile(v_ent,  P_MAX)
+    umbral_kurt_min = np.percentile(v_kurt, P_MIN)
+    umbral_kurt_max = np.percentile(v_kurt, P_MAX)
+    print(f"Umbrales {P_MIN}-{P_MAX} → PSD:[{umbral_psd_min:.3e}, {umbral_psd_max:.3e}], "
+      f"Ent:[{umbral_ent_min:.3f}, {umbral_ent_max:.3f}], "
+      f"Kurt:[{umbral_kurt_min:.3f}, {umbral_kurt_max:.3f}]")
 
     descartados = []
     for psd_var, ent_var, kurt_var, path, audio in resultados:
-        if filt=="psd"  and psd_var  < umbral_psd:
-            score = psd_var
-        elif filt=="ent" and ent_var < umbral_ent:
-            score = ent_var
-        elif filt=="kurt" and kurt_var < umbral_kurt:
-            score = kurt_var
-        else:
+        if filt == "psd" and (psd_var < umbral_psd_min or psd_var > umbral_psd_max):
             continue
-        descartados.append((score, path, audio))
+        elif filt == "ent" and (ent_var < umbral_ent_min or ent_var > umbral_ent_max):
+            continue
+        elif filt == "kurt" and (kurt_var < umbral_kurt_min or kurt_var > umbral_kurt_max):
+            continue
+        else:
+            score = {"psd": psd_var, "ent": ent_var, "kurt": kurt_var}[filt]
+            descartados.append((score, path, audio))
+    
 
     descartados.sort(key=lambda x: x[0])
     print(f"Descartados: {len(descartados)}/{len(resultados)}")

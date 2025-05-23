@@ -7,6 +7,7 @@ import argparse
 
 def split_dataset(root_folder, output_folder, train_ratio=0.6, val_ratio=0.2, test_ratio=0.2):
     assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6, "Las proporciones deben sumar 1"
+    random.seed(42)  # Para reproducibilidad
 
     train_folder = os.path.join(output_folder, 'train')
     val_folder = os.path.join(output_folder, 'val')

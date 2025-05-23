@@ -17,6 +17,8 @@ original/
 audios_NA/
 raw_audios_NA/
 audios_clean_NA/
+audios_full/
+balanced_data/
 
 # Inputs Kaggle
 Inputs/
