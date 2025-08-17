@@ -1,6 +1,7 @@
 # Virtual Environment
 env-emb/
 env-class/
+Cleaning/
 .env/
 *.pyc
 __pycache__/
