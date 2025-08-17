@@ -8,6 +8,8 @@ __pycache__/
 
 # train
 audios/
+raw_segments/
+raw_specs/
 embeddings/
 raw_audios/
 silence/
